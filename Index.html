@@ -1,1 +1,311 @@
 
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ular Tangga Sederhana</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(135deg, #eef2ff, #f8fafc);
+      color: #172033;
+      display: flex;
+      justify-content: center;
+      padding: 24px;
+    }
+    .game {
+      width: min(980px, 100%);
+      background: rgba(255,255,255,.94);
+      border: 1px solid #e2e8f0;
+      border-radius: 22px;
+      box-shadow: 0 18px 50px rgba(15,23,42,.12);
+      padding: 24px;
+    }
+    h1 { margin: 0 0 6px; text-align: center; }
+    .subtitle { text-align:center; color:#64748b; margin:0 0 20px; }
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(300px, 1fr) 290px;
+      gap: 22px;
+      align-items: start;
+    }
+    #board {
+      width: min(100%, 650px);
+      aspect-ratio: 1;
+      margin: auto;
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      border: 4px solid #1e293b;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .cell {
+      position: relative;
+      border: 1px solid rgba(30,41,59,.2);
+      min-width: 0;
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-end;
+      padding: 3px;
+      font-size: clamp(9px, 1.5vw, 14px);
+      font-weight: 700;
+    }
+    .cell:nth-child(odd) { background:#fff7ed; }
+    .cell:nth-child(even) { background:#eff6ff; }
+    .cell.ladder { background:#ecfdf5; }
+    .cell.snake { background:#fef2f2; }
+    .num { opacity:.75; }
+    .piece {
+      position: absolute;
+      left: 50%;
+      top: 52%;
+      transform: translate(-50%, -50%);
+      width: 46%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      border: 2px solid white;
+      box-shadow: 0 2px 7px rgba(0,0,0,.25);
+      z-index: 2;
+    }
+    .p1 { background:#2563eb; }
+    .p2 { background:#ef4444; }
+    .controls {
+      background:#f8fafc;
+      border:1px solid #e2e8f0;
+      border-radius:16px;
+      padding:18px;
+    }
+    .turn {
+      text-align:center;
+      font-size:18px;
+      font-weight:800;
+      margin-bottom:14px;
+    }
+    .dice {
+      width:90px;
+      height:90px;
+      margin:0 auto 14px;
+      display:grid;
+      place-items:center;
+      background:white;
+      border:2px solid #cbd5e1;
+      border-radius:16px;
+      font-size:46px;
+      box-shadow:0 5px 15px rgba(15,23,42,.08);
+    }
+    button {
+      width:100%;
+      border:0;
+      border-radius:12px;
+      padding:13px 16px;
+      font-size:16px;
+      font-weight:800;
+      cursor:pointer;
+      background:#2563eb;
+      color:white;
+    }
+    button:hover { filter:brightness(.95); }
+    button:disabled { opacity:.5; cursor:not-allowed; }
+    .reset { margin-top:9px; background:#475569; }
+    .info {
+      margin-top:16px;
+      display:grid;
+      gap:8px;
+      font-size:14px;
+    }
+    .legend { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+    .tag {
+      padding:6px 9px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:700;
+    }
+    .blue { background:#dbeafe; color:#1d4ed8; }
+    .red { background:#fee2e2; color:#b91c1c; }
+    .green { background:#dcfce7; color:#15803d; }
+    .log {
+      margin-top:16px;
+      max-height:180px;
+      overflow:auto;
+      padding-left:18px;
+      color:#475569;
+      font-size:13px;
+    }
+    @media (max-width: 760px) {
+      body { padding:12px; }
+      .game { padding:14px; border-radius:16px; }
+      .layout { grid-template-columns:1fr; }
+      .controls { order:-1; }
+      .piece { width:40%; }
+    }
+  </style>
+</head>
+<body>
+  <main class="game">
+    <h1>🐍 Ular Tangga</h1>
+    <p class="subtitle">Game lokal sederhana — 2 pemain, tanpa internet.</p>
+
+    <div class="layout">
+      <section>
+        <div id="board" aria-label="Papan ular tangga"></div>
+        <div class="legend">
+          <span class="tag blue">🔵 Pemain 1</span>
+          <span class="tag red">🔴 Pemain 2</span>
+          <span class="tag green">🪜 Tangga naik</span>
+          <span class="tag red">🐍 Ular turun</span>
+        </div>
+      </section>
+
+      <aside class="controls">
+        <div class="turn" id="turnText">Giliran Pemain 1</div>
+        <div class="dice" id="dice">⚀</div>
+        <button id="rollBtn">Lempar Dadu</button>
+        <button class="reset" id="resetBtn">Mulai Ulang</button>
+
+        <div class="info">
+          <div>🔵 Pemain 1: <strong id="pos1">1</strong></div>
+          <div>🔴 Pemain 2: <strong id="pos2">1</strong></div>
+          <div id="status">Capai kotak 100 untuk menang!</div>
+        </div>
+
+        <ol class="log" id="log"></ol>
+      </aside>
+    </div>
+  </main>
+
+<script>
+  const snakes = {
+    99: 78, 95: 75, 92: 88, 64: 60, 48: 26, 44: 22, 39: 20, 17: 7
+  };
+  const ladders = {
+    4: 25, 9: 31, 20: 41, 28: 55, 40: 59, 51: 67, 63: 81, 71: 91
+  };
+
+  const board = document.getElementById("board");
+  const diceEl = document.getElementById("dice");
+  const rollBtn = document.getElementById("rollBtn");
+  const resetBtn = document.getElementById("resetBtn");
+  const turnText = document.getElementById("turnText");
+  const pos1El = document.getElementById("pos1");
+  const pos2El = document.getElementById("pos2");
+  const statusEl = document.getElementById("status");
+  const logEl = document.getElementById("log");
+
+  let players = [1, 1];
+  let current = 0;
+  let gameOver = false;
+
+  const diceFaces = ["⚀","⚁","⚂","⚃","⚄","⚅"];
+
+  function createBoard() {
+    board.innerHTML = "";
+    // Nomor berjalan dari bawah ke atas, seperti papan ular tangga klasik.
+    for (let row = 0; row < 10; row++) {
+      const start = 100 - row * 10;
+      const nums = Array.from({length:10}, (_, i) => start - i);
+      if (row % 2 === 1) nums.reverse();
+
+      nums.forEach(n => {
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        if (ladders[n]) cell.classList.add("ladder");
+        if (snakes[n]) cell.classList.add("snake");
+        cell.dataset.n = n;
+        cell.innerHTML = `<span class="num">${n}</span>`;
+        board.appendChild(cell);
+      });
+    }
+    renderPieces();
+  }
+
+  function renderPieces() {
+    document.querySelectorAll(".piece").forEach(p => p.remove());
+    players.forEach((pos, i) => {
+      const cell = document.querySelector(`.cell[data-n="${pos}"]`);
+      if (!cell) return;
+      const piece = document.createElement("div");
+      piece.className = `piece p${i + 1}`;
+      piece.title = `Pemain ${i + 1}`;
+      cell.appendChild(piece);
+    });
+    pos1El.textContent = players[0];
+    pos2El.textContent = players[1];
+  }
+
+  function addLog(text) {
+    const li = document.createElement("li");
+    li.textContent = text;
+    logEl.prepend(li);
+  }
+
+  function rollDice() {
+    if (gameOver) return;
+
+    const player = current;
+    const roll = Math.floor(Math.random() * 6) + 1;
+    diceEl.textContent = diceFaces[roll - 1];
+
+    let next = players[player] + roll;
+
+    if (next > 100) {
+      addLog(`Pemain ${player + 1} mendapat ${roll}, tetapi harus tepat 100.`);
+      statusEl.textContent = `Pemain ${player + 1} belum bisa bergerak.`;
+    } else {
+      players[player] = next;
+      let message = `Pemain ${player + 1} melempar ${roll} dan maju ke ${next}.`;
+
+      if (ladders[next]) {
+        players[player] = ladders[next];
+        message += ` Naik tangga ke ${ladders[next]}!`;
+      } else if (snakes[next]) {
+        players[player] = snakes[next];
+        message += ` Dimakan ular, turun ke ${snakes[next]}!`;
+      }
+
+      addLog(message);
+      statusEl.textContent = message;
+    }
+
+    renderPieces();
+
+    if (players[player] === 100) {
+      gameOver = true;
+      turnText.textContent = `🎉 Pemain ${player + 1} Menang!`;
+      statusEl.textContent = "Permainan selesai. Tekan Mulai Ulang untuk bermain lagi.";
+      rollBtn.disabled = true;
+      return;
+    }
+
+    // Mendapat angka 6 memberi kesempatan melempar lagi.
+    if (roll === 6) {
+      turnText.textContent = `Giliran Pemain ${player + 1} — dapat bonus!`;
+    } else {
+      current = 1 - current;
+      turnText.textContent = `Giliran Pemain ${current + 1}`;
+    }
+  }
+
+  function resetGame() {
+    players = [1, 1];
+    current = 0;
+    gameOver = false;
+    diceEl.textContent = "⚀";
+    turnText.textContent = "Giliran Pemain 1";
+    statusEl.textContent = "Capai kotak 100 untuk menang!";
+    logEl.innerHTML = "";
+    rollBtn.disabled = false;
+    renderPieces();
+  }
+
+  rollBtn.addEventListener("click", rollDice);
+  resetBtn.addEventListener("click", resetGame);
+
+  createBoard();
+</script>
+</body>
+</html>
